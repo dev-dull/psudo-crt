@@ -19,8 +19,12 @@ nothing to put on your `PATH`.
 git clone git@github.com:dev-dull/psudo-crt.git
 cd psudo-crt
 python3 -m venv venv
-./venv/bin/pip install numpy imageio-ffmpeg
+./venv/bin/pip install -r requirements.txt
 ```
+
+The versions in `requirements.txt` are pinned to the ones the sample was
+rendered with. `pip install numpy imageio-ffmpeg` works just as well if you
+would rather take the current releases.
 
 If you ever need that bundled ffmpeg directly — the GIF recipe below does:
 

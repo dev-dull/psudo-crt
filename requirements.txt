@@ -1,0 +1,10 @@
+# Pinned so a render is reproducible. These are the versions the committed
+# sample was made with.
+#
+#   python3 -m venv venv && ./venv/bin/pip install -r requirements.txt
+#
+# imageio-ffmpeg carries its own ffmpeg binary, so nothing is installed
+# system-wide and no Homebrew ffmpeg is needed.
+
+numpy==2.5.2
+imageio-ffmpeg==0.6.0
