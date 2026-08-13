@@ -1,6 +1,6 @@
 # psudo-crt
 
-![An amber CRT test grid with a band of collapsed horizontal scan rolling up the screen](docs/sample.gif)
+![An amber CRT reading PSUDO-CRT over a test grid, with a band of collapsed horizontal scan rolling up the screen and warping the lettering as it passes](docs/sample.gif)
 
 A procedural amber CRT, rendered from nothing but arithmetic — a test grid on a
 simulated tube, with a **pinch**: a band where the horizontal scan amplitude
