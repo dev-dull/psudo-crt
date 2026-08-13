@@ -1,0 +1,19 @@
+# Rendered output — regenerate with crt_pinch.py, don't commit it.
+*.mp4
+*.gif
+*.png
+*.webm
+*.mov
+
+# ...except the sample assets the README embeds.
+!docs/*.gif
+!docs/*.png
+
+# Python
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+
+# macOS
+.DS_Store
