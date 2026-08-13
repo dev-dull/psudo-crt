@@ -130,6 +130,98 @@ def typeset(text, align):
     return page.transpose(0, 2, 1, 3).reshape(len(lines) * FONT_H, cols * FONT_W)
 
 
+# --------------------------------------------------------------------- text
+#
+# --text may be repeated. Each occurrence starts a block, and any text option
+# after it belongs to that block, so blocks can differ in size and position:
+#
+#   --text 'TITLE' --text-size 0.10 --text-y -0.23  --text '$?' --text-size 0.18
+#
+# Options given before the first --text set the default for every block, which
+# is what makes the single-block spelling work whatever order it is written in.
+
+TEXT_DEFAULTS = dict(text_size=0.075, text_x=0.0, text_y=0.0, text_align="center",
+                     text_bright=1.0, text_box=False, text_margin=0.6,
+                     cursor=False, cursor_hz=1.7)
+
+
+class TextOpt(argparse.Action):
+    """Record a text option, keeping the order it was given in."""
+
+    def __call__(self, parser, ns, values, option_string=None):
+        ns.text_ops = getattr(ns, "text_ops", []) + [(self.dest, values)]
+
+
+class TextFlag(TextOpt):
+    """The same, for the text options that take no value."""
+
+    def __init__(self, *args, **kw):
+        super().__init__(*args, nargs=0, **kw)
+
+    def __call__(self, parser, ns, values, option_string=None):
+        super().__call__(parser, ns, True, option_string)
+
+
+def text_specs(cfg):
+    """Split the recorded options into one settings dict per block."""
+    base, specs = dict(TEXT_DEFAULTS), []
+    for dest, value in getattr(cfg, "text_ops", None) or []:
+        if dest == "text":
+            specs.append(dict(base, text=value))
+        elif specs:
+            specs[-1][dest] = value            # applies to the block above it
+        else:
+            base[dest] = value                 # before any --text: a global default
+    return [s for s in specs if s["text"]]
+
+
+class TextBlock:
+    """One run of text, laid out in signal space so the fault warps it."""
+
+    def __init__(self, spec, period):
+        self.x, self.y = spec["text_x"], spec["text_y"]
+        self.align, self.bright = spec["text_align"], spec["text_bright"]
+        self.box, self.margin = spec["text_box"], spec["text_margin"]
+        self.cursor = spec["cursor"]
+
+        self.page = typeset(spec["text"], self.align)
+        rows, cols = (n // f for n, f in zip(self.page.shape, (FONT_H, FONT_W)))
+        self.cell_v = spec["text_size"] * 2.0
+        self.cell_u = self.cell_v * FONT_W / FONT_H   # square font pixels
+        self.tw = cols * self.cell_u
+        self.th = rows * self.cell_v
+        self.u0 = self.x - self.tw / 2.0
+        self.v0 = self.y - self.th / 2.0
+
+        # a block cursor sitting just past the end of the last line
+        last = len(spec["text"].replace("\\n", "\n").split("\n")[-1])
+        end = (cols + last) / 2.0 if self.align == "center" else last
+        self.cur_u = self.u0 + (end + GLYPH_W / 2.0 / FONT_W) * self.cell_u
+        self.cur_v = self.v0 + self.th - self.cell_v * (1.0 - 3.5 / FONT_H)
+        self.blinks = max(1, round(period * spec["cursor_hz"]))
+
+    def clear(self, u, v, gain, w):
+        """How much of the grid to take out behind this block, 0..1."""
+        m = self.margin * self.cell_v
+        return (soft_inside(self.tw / 2 + m, u - self.x, w / gain)
+                * soft_inside(self.th / 2 + m, v - self.y, w))
+
+    def sample(self, u, v, phase):
+        """Nearest-neighbour lookup into the glyph page, in signal space."""
+        ph, pw = self.page.shape
+        ix = np.floor((u - self.u0) / self.cell_u * FONT_W).astype(np.int32)
+        iy = np.floor((v - self.v0) / self.cell_v * FONT_H).astype(np.int32)
+        on = (ix >= 0) & (ix < pw) & (iy >= 0) & (iy < ph)
+        mask = self.page[np.clip(iy, 0, ph - 1), np.clip(ix, 0, pw - 1)] * on
+
+        if self.cursor and int(phase * self.blinks * 2.0) % 2 == 0:
+            hu = GLYPH_W / 2.0 * self.cell_u / FONT_W
+            hv = 3.5 * self.cell_v / FONT_H
+            mask = np.maximum(mask, (np.abs(u - self.cur_u) < hu)
+                              & (np.abs(v - self.cur_v) < hv))
+        return mask.astype(np.float32)
+
+
 def gaussian_blur(a, sigma):
     """FFT gaussian on a 1/4-scale copy, then upsampled. Cheap halation."""
     h, w = a.shape
@@ -228,39 +320,7 @@ class Tube:
             np.array(tint[k], np.float32) for k in ("bg", "line", "hot", "halo"))
 
         # text, laid out in signal space so the fault warps it like everything else
-        self.page = None
-        if cfg.text:
-            self.page = typeset(cfg.text, cfg.text_align)
-            rows, cols = (n // f for n, f in zip(self.page.shape, (FONT_H, FONT_W)))
-            self.cell_v = cfg.text_size * 2.0
-            self.cell_u = self.cell_v * FONT_W / FONT_H   # square font pixels
-            self.tw = cols * self.cell_u
-            self.th = rows * self.cell_v
-            self.u0 = cfg.text_x - self.tw / 2.0
-            self.v0 = cfg.text_y - self.th / 2.0
-
-            # a block cursor sitting just past the end of the last line
-            last = len(cfg.text.replace("\\n", "\n").split("\n")[-1])
-            end = (cols + last) / 2.0 if cfg.text_align == "center" else last
-            self.cur_u = self.u0 + (end + GLYPH_W / 2.0 / FONT_W) * self.cell_u
-            self.cur_v = self.v0 + self.th - self.cell_v * (1.0 - 3.5 / FONT_H)
-            self.blinks = max(1, round(cfg.period * cfg.cursor_hz))
-
-    def sample_text(self, u, v, phase):
-        """Nearest-neighbour lookup into the glyph page, in signal space."""
-        cfg = self.cfg
-        ph, pw = self.page.shape
-        ix = np.floor((u - self.u0) / self.cell_u * FONT_W).astype(np.int32)
-        iy = np.floor((v - self.v0) / self.cell_v * FONT_H).astype(np.int32)
-        on = (ix >= 0) & (ix < pw) & (iy >= 0) & (iy < ph)
-        mask = self.page[np.clip(iy, 0, ph - 1), np.clip(ix, 0, pw - 1)] * on
-
-        if cfg.cursor and int(phase * self.blinks * 2.0) % 2 == 0:
-            hu = GLYPH_W / 2.0 * self.cell_u / FONT_W
-            hv = 3.5 * self.cell_v / FONT_H
-            mask = np.maximum(mask, (np.abs(u - self.cur_u) < hu)
-                              & (np.abs(v - self.cur_v) < hv))
-        return mask.astype(np.float32)
+        self.blocks = [TextBlock(s, cfg.period) for s in text_specs(cfg)]
 
     def frame(self, phase):
         """Render one frame; phase 0..1 is one full traverse of the screen."""
@@ -285,12 +345,13 @@ class Tube:
         if not cfg.grid:
             inten *= 0.0
 
-        if self.page is not None:
-            if cfg.text_box:                     # clear the grid out behind the text
-                m = cfg.text_margin * self.cell_v
-                inten *= 1.0 - (soft_inside(self.tw / 2 + m, u - cfg.text_x, w / gain)
-                                * soft_inside(self.th / 2 + m, v - cfg.text_y, w))
-            inten += self.sample_text(u, v, phase) * cfg.text_bright
+        # every box clears before any text is laid down, so one block's box can
+        # never rub out a neighbouring block's characters
+        for b in self.blocks:
+            if b.box:                            # clear the grid out behind the text
+                inten *= 1.0 - b.clear(u, v, gain, w)
+        for b in self.blocks:
+            inten += b.sample(u, v, phase) * b.bright
 
         # raster structure: the beam only exists on scan lines
         scan = 0.5 + 0.5 * np.cos(2.0 * np.pi * v / self.scan_period)
@@ -394,21 +455,28 @@ def main():
     p.add_argument("--scan-depth", type=float, default=0.40)
     p.add_argument("--vignette", type=float, default=0.22)
     p.add_argument("--grain", type=float, default=0.010)
-    p.add_argument("--text", default="", help=r"text to display; \n splits lines")
-    p.add_argument("--text-size", type=float, default=0.075,
-                   help="character cell height as a fraction of screen height")
-    p.add_argument("--text-x", type=float, default=0.0, help="offset right, in [-1,1]")
-    p.add_argument("--text-y", type=float, default=0.0, help="offset down, in [-1,1]")
-    p.add_argument("--text-align", choices=("center", "left"), default="center")
-    p.add_argument("--text-bright", type=float, default=1.0)
-    p.add_argument("--text-box", action="store_true",
+    p.add_argument("--text", action=TextOpt,
+                   help=r"text to display; \n splits lines. Repeat it for more "
+                        "blocks — the text options below apply to whichever "
+                        "--text precedes them")
+    p.add_argument("--text-size", type=float, action=TextOpt,
+                   help="character cell height as a fraction of screen height "
+                        "(default 0.075)")
+    p.add_argument("--text-x", type=float, action=TextOpt,
+                   help="offset right, in [-1,1] (default 0)")
+    p.add_argument("--text-y", type=float, action=TextOpt,
+                   help="offset down, in [-1,1] (default 0)")
+    p.add_argument("--text-align", choices=("center", "left"), action=TextOpt,
+                   help="default center")
+    p.add_argument("--text-bright", type=float, action=TextOpt, help="default 1.0")
+    p.add_argument("--text-box", action=TextFlag,
                    help="clear the grid out behind the text")
-    p.add_argument("--text-margin", type=float, default=0.6,
-                   help="--text-box padding, in character cells")
+    p.add_argument("--text-margin", type=float, action=TextOpt,
+                   help="--text-box padding, in character cells (default 0.6)")
     p.add_argument("--no-grid", dest="grid", action="store_false",
                    help="text only, on a bare raster")
-    p.add_argument("--cursor", action="store_true", help="blinking block cursor")
-    p.add_argument("--cursor-hz", type=float, default=1.7)
+    p.add_argument("--cursor", action=TextFlag, help="blinking block cursor")
+    p.add_argument("--cursor-hz", type=float, action=TextOpt, help="default 1.7")
     p.add_argument("--crf", type=int, default=14)
     p.add_argument("--pillarbox", action="store_true", help="4:3 picture, black sides")
     p.add_argument("--still", help="render a single PNG instead of a video")

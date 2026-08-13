@@ -98,6 +98,25 @@ travelling fault stretches and shoves the characters exactly as it does the
 grid, the scanlines cut through them, and they bloom into the halation. Put a
 line where the pinch passes and watch it get mangled.
 
+### More than one block
+
+`--text` can be repeated. Each occurrence starts a new block, and the text
+options *after* it belong to that block — so blocks can differ in size,
+position, alignment and brightness. That is how you mix sizes on one card:
+
+```sh
+./venv/bin/python crt_pinch.py -o title.mp4 --no-grid \
+    --text 'QUESTIONABLE\nCOMMANDS' --text-size 0.10 --text-y -0.23 \
+    --text '$?'                     --text-size 0.18 --text-y 0.25
+```
+
+Options given *before* the first `--text` set the default for every block, so
+the single-block spelling still works whatever order you write it in.
+
+Blocks are independent, and every `--text-box` is cleared before any characters
+are laid down — so a box belonging to one block can never rub out a neighbour's
+text, however much they overlap.
+
 ### Rendering GIFs
 
 Render GIFs from **their own grain-free pass** at the target resolution. Film
@@ -161,10 +180,10 @@ don't downscale.
 
 | Flag | Default | Effect |
 |---|---|---|
-| `--text` | none | The text. `\n` splits lines; blank lines are fine |
+| `--text` | none | The text. `\n` splits lines; blank lines are fine. Repeatable — see above |
 | `--text-size` | `0.075` | Character cell height as a fraction of screen height |
 | `--text-x` / `--text-y` | `0` / `0` | Offset from centre, in `[-1,1]`; `+y` is down |
-| `--text-align` | `center` | `center` or `left`, for multi-line blocks |
+| `--text-align` | `center` | `center` or `left`, within a block |
 | `--text-bright` | `1.0` | Below `1` for a dimmer, less blown-out trace |
 | `--text-box` | off | Clear the grid out behind the text block |
 | `--text-margin` | `0.6` | `--text-box` padding, in character cells |
