@@ -243,7 +243,7 @@ are not in the repository. The one exception is `docs/sample.gif` above.
 
 ## The name
 
-Not `pseudo`. Not `sudo`. `psudo`.
+Not `pseudo`. `psudo`.
 
 `PSEUDOCRT` is nine characters. An 8.3 filename gets you eight. Something had
 to go, and it was never going to be a consonant — the convention of the era was
@@ -252,9 +252,13 @@ is how the same decade produced `CHKDSK`, `XCOPY`, `MSCDEX` and `QBASIC`. Drop
 the `e` and you get `PSUDOCRT`: eight on the nose, no truncation, and it still
 fits on a diskette label without wrapping.
 
-`sudo` would have been a lie besides. Nothing here elevates anything — it draws
-a picture of a broken monitor. The only privilege involved is being allowed to
-write to the output file.
+What falls out is better than what was intended. Phosphors are catalogued by a
+`P` and a number — P3 the amber, P31 the green terminal, P4 the paper-white
+television. Two of those are entries in the `PHOSPHORS` table already and the
+third is [issue #1](https://github.com/dev-dull/psudo-crt/issues/1). Read the
+name that way and it is one more designation in the same list: `P`, and then,
+where the number belongs, an admission. There is no phosphor. Nothing in here
+glows. It is arithmetic that has been told what glowing looks like.
 
 The vowel is not lost, exactly. It went the way of everything else that passes
 through the horizontal output stage on a set with ripple in the rail.
