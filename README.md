@@ -241,6 +241,24 @@ Video and GIF output is **gitignored**. The renders are large — the original
 set ran to about 200 MB — and they are reproducible from the script, so they
 are not in the repository. The one exception is `docs/sample.gif` above.
 
+## The name
+
+Not `pseudo`. Not `sudo`. `psudo`.
+
+`PSEUDOCRT` is nine characters. An 8.3 filename gets you eight. Something had
+to go, and it was never going to be a consonant — the convention of the era was
+to keep the letters that carry the sound and let the vowels take the hit, which
+is how the same decade produced `CHKDSK`, `XCOPY`, `MSCDEX` and `QBASIC`. Drop
+the `e` and you get `PSUDOCRT`: eight on the nose, no truncation, and it still
+fits on a diskette label without wrapping.
+
+`sudo` would have been a lie besides. Nothing here elevates anything — it draws
+a picture of a broken monitor. The only privilege involved is being allowed to
+write to the output file.
+
+The vowel is not lost, exactly. It went the way of everything else that passes
+through the horizontal output stage on a set with ripple in the rail.
+
 ## Why
 
 The fault is the one Adrian pulls apart in [this Adrian's Digital Basement
