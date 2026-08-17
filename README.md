@@ -151,6 +151,7 @@ don't downscale.
 | `--fps` | `60` | Frame rate |
 | `--period` | `16` | Seconds to travel one screen height (= loop length) |
 | `--direction` | `1` | `1` rolls up, `-1` rolls down |
+| `--start` | `0` | How far into the cycle the loop begins, `0`–`1`. `0` opens with the band across the middle, `0.5` opens with it at the top and bottom edges |
 | `--phosphor` | `amber` | `amber` (P3) or `green` (P31) |
 | `--pinch` | `0.075` | How hard the scan narrows. `0.15` is a badly sick set |
 | `--band` | `0.22` | Height of the disturbed region |

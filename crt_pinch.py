@@ -326,8 +326,11 @@ class Tube:
         """Render one frame; phase 0..1 is one full traverse of the screen."""
         cfg, pitch, w = self.cfg, self.pitch, self.w_core
 
-        # travelling fault: +direction moves the band up the screen
-        t = np.mod(self.TY + 1.0 + 2.0 * phase * cfg.direction, 2.0) - 1.0
+        # travelling fault: +direction moves the band up the screen. --start slides
+        # the whole cycle along, which decides where the band is sitting on the
+        # first frame; the loop stays seamless because the shift is constant.
+        t = np.mod(self.TY + 1.0
+                   + 2.0 * (phase + cfg.start) * cfg.direction, 2.0) - 1.0
         f = fault_profile(t, cfg.band, cfg.ring, cfg.asym)
 
         gain = 1.0 - cfg.pinch * f               # horizontal scan amplitude
@@ -431,6 +434,10 @@ def main():
     p.add_argument("--period", type=float, default=16.0,
                    help="seconds to travel one screen height (= seamless loop length)")
     p.add_argument("--direction", type=float, default=1.0, help="1 = up, -1 = down")
+    p.add_argument("--start", type=float, default=0.0,
+                   help="how far into the cycle the loop begins, 0..1. 0 puts the "
+                        "band across the middle of the screen on the first frame, "
+                        "0.5 puts it at the top and bottom edges (default 0)")
     p.add_argument("--phosphor", choices=tuple(PHOSPHORS), default="amber",
                    help="tube colour")
     p.add_argument("--rows", type=int, default=12, help="grid rows top to bottom")
