@@ -68,12 +68,22 @@ aperture, it does not widen the picture.
 
 ### Phosphor
 
-Amber (P3) is the default; `--phosphor green` gives the yellow-green P31
-terminal instead.
+Amber (P3) is the default. `--phosphor green` gives the yellow-green P31
+terminal, and `--phosphor white` the slightly blue P4 of a monochrome
+television or an early Mac.
 
 ```sh
 ./venv/bin/python crt_pinch.py -o green.mp4 --phosphor green
+./venv/bin/python crt_pinch.py -o tv.mp4    --phosphor white
 ```
+
+P4 is the odd one of the three. A terminal phosphor keeps its colour right up
+to the point the trace clips, so it reads as itself at every brightness; a
+white one has nowhere to go, and if you let it clip it stops looking like a
+tube and starts looking like a grey card with white lines on it. So the trace
+sits lower here than the other two and leans blue, and only the cores reach
+white — and go faintly warm doing it, the way the blue half of the phosphor
+saturates first on a set driven hard.
 
 Each entry in the `PHOSPHORS` table at the top of the script carries four
 colours — unlit glass, trace, the shift added where the beam is driven past
@@ -152,7 +162,7 @@ don't downscale.
 | `--period` | `16` | Seconds to travel one screen height (= loop length) |
 | `--direction` | `1` | `1` rolls up, `-1` rolls down |
 | `--start` | `0` | How far into the cycle the loop begins, `0`–`1`. `0` opens with the band across the middle, `0.5` opens with it at the top and bottom edges |
-| `--phosphor` | `amber` | `amber` (P3) or `green` (P31) |
+| `--phosphor` | `amber` | `amber` (P3), `green` (P31) or `white` (P4) |
 | `--pinch` | `0.075` | How hard the scan narrows. `0.15` is a badly sick set |
 | `--band` | `0.22` | Height of the disturbed region |
 | `--asym` | `0.55` | Sharpness above the band vs below; `1.0` is symmetric |
@@ -274,9 +284,8 @@ fits on a diskette label without wrapping.
 
 What falls out is better than what was intended. Phosphors are catalogued by a
 `P` and a number — P3 the amber, P31 the green terminal, P4 the paper-white
-television. Two of those are entries in the `PHOSPHORS` table already and the
-third is [issue #1](https://github.com/dev-dull/psudo-crt/issues/1). Read the
-name that way and it is one more designation in the same list: `P`, and then,
+television. All three are entries in the `PHOSPHORS` table. Read the name that
+way and it is one more designation in the same list: `P`, and then,
 where the number belongs, an admission. There is no phosphor. Nothing in here
 glows. It is arithmetic that has been told what glowing looks like.
 
